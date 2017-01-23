@@ -2,11 +2,12 @@
 var backgroundColor;
 var spheres = [];
 var growing = false;
-const lightZ = -1000;
 var count = 0;
 const fr = 100;
-var branchProb = 0.01;
+var branchProb = 0.002;
 var deathProb = 0.003;
+const numSeeds = 30;
+const maxDistanceFromSeed = 700;
 
 //=========================
 //Setup & draw functions
@@ -34,7 +35,8 @@ function draw() {
         background(backgroundColor);
         noStroke();
         ambientLight(100);
-        pointLight(100, 250, 250, 1000, 1000, lightZ);
+        // pointLight(100, 250, 250, 1000, 1000, -1000);
+        pointLight(250, 100, 250, -1000, 1000, 0);
         updateTrees();
         // drawGround();
     };
@@ -50,8 +52,8 @@ function updateTrees(){
 };
 
 function plantSeeds(){
-    for (var i = 0; i < 10; i ++) {
-        spheres.push(new Sphere(random(-500, 500), 300, random(-1600, 0), 0, -0.5, 0, 10, random(0, 25), random(100, 255), random(0, 125), 1));
+    for (var i = 0; i < numSeeds; i ++) {
+        spheres.push(new Sphere(null, random(-500, 500), 300, random(-1600, 0), 0, -0.5, 0, 10, random(0, 25), random(100, 255), random(0, 125), 1));
     };
 };
 
@@ -65,15 +67,11 @@ function drawGround(){
 //=========================
 //Classes
 //=========================
-var Sphere = function(x, y, z, xMomentum, yMomentum, zMomentum, radius, r, g, b, a){
+var Sphere = function(seed, x, y, z, xMomentum, yMomentum, zMomentum, radius, r, g, b, a){
   //collection of birds with a common target, speed, and color
   // to-do: give individual speeds to birds, add acceleration to flocking
   this.alive = true;
-  this.init = function(){
-      if (this.y < -500 || random(0,1) < deathProb || this.a <= 0) {
-          this.alive = false;
-      };
-  };
+  this.seed = null;
   this.r = r;
   this.g = g;
   this.b = b;
@@ -106,8 +104,21 @@ var Sphere = function(x, y, z, xMomentum, yMomentum, zMomentum, radius, r, g, b,
                   let newSphereX = this.x + newXMomentum;
                   let newSphereY = this.y + newYMomentum;
                   let newSphereZ = this.z + newZMomentum;
-                  let newAlpha = this.a - 0.004;
-                  spheres.push(new Sphere(newSphereX, newSphereY, newSphereZ, newXMomentum, newYMomentum, newZMomentum, newRadius, this.r, this.g, this.b, newAlpha));
+
+                  var seed = this.seed;
+                  if (!seed) {
+                      seed = this;
+                  };
+
+                  distanceFromSeed = findDistance(newSphereX, newSphereY, newSphereZ, seed.x, seed.y, seed.z);
+
+                  let newAlpha = this.a - 1 / (maxDistanceFromSeed - distanceFromSeed);
+                  if (newAlpha < 0) {
+                      newAlpha = 0;
+                  };
+
+
+                  spheres.push(new Sphere(seed, newSphereX, newSphereY, newSphereZ, newXMomentum, newYMomentum, newZMomentum, newRadius, this.r, this.g, this.b, newAlpha));
                   this.alive = false;
               }
 
@@ -115,17 +126,26 @@ var Sphere = function(x, y, z, xMomentum, yMomentum, zMomentum, radius, r, g, b,
       };
 
       var color = 'rgba(' + Math.floor(this.r) + ', ' + Math.floor(this.g) + ', ' + Math.floor(this.b) + ', ' + parseFloat(this.a.toFixed(2)) + ')';
-      specularMaterial(color);
+      ambientMaterial(color);
       translate(this.x, this.y, this.z);
       sphere(this.radius);
       translate(-1 * this.x, -1 * this.y, -1 * this.z);
+  };
+
+  this.init = function(){
+      if (this.y < -500 || random(0,1) < deathProb || this.a <= 0) {
+          this.alive = false;
+      };
+      if (seed) {
+          this.seed = seed;
+      };
   };
 
   this.init();
 };
 
 //=========================
-//Interactivity functions
+//Other functions
 //=========================
 function keyPressed() {
     if (keyCode) {
@@ -136,4 +156,9 @@ function keyPressed() {
                 break;
         };
     };
+};
+
+function findDistance(x1, y1, z1, x2, y2, z2) {
+    distance = Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2) + Math.pow(z2 - z1, 2));
+    return distance;
 };
