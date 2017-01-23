@@ -4,9 +4,9 @@ var spheres = [];
 var growing = false;
 var count = 0;
 const fr = 100;
-var branchProb = 0.002;
+var branchProb = 0.03;
 var deathProb = 0.003;
-const numSeeds = 30;
+const numSeeds = 1;
 const maxDistanceFromSeed = 700;
 
 //=========================
@@ -30,6 +30,8 @@ function windowResized() {
 
 function draw() {
     //move all birds
+    orbitControl();
+
     if (count < 20000) {
         clear();
         background(backgroundColor);
@@ -104,21 +106,14 @@ var Sphere = function(seed, x, y, z, xMomentum, yMomentum, zMomentum, radius, r,
                   let newSphereX = this.x + newXMomentum;
                   let newSphereY = this.y + newYMomentum;
                   let newSphereZ = this.z + newZMomentum;
+                  console.log(newXMomentum);
 
                   var seed = this.seed;
                   if (!seed) {
                       seed = this;
                   };
 
-                  distanceFromSeed = findDistance(newSphereX, newSphereY, newSphereZ, seed.x, seed.y, seed.z);
-
-                  let newAlpha = this.a - 1 / (maxDistanceFromSeed - distanceFromSeed);
-                  if (newAlpha < 0) {
-                      newAlpha = 0;
-                  };
-
-
-                  spheres.push(new Sphere(seed, newSphereX, newSphereY, newSphereZ, newXMomentum, newYMomentum, newZMomentum, newRadius, this.r, this.g, this.b, newAlpha));
+                  spheres.push(new Sphere(seed, newSphereX, newSphereY, newSphereZ, newXMomentum, newYMomentum, newZMomentum, newRadius, this.r, this.g, this.b, this.a));
                   this.alive = false;
               }
 
@@ -132,16 +127,17 @@ var Sphere = function(seed, x, y, z, xMomentum, yMomentum, zMomentum, radius, r,
       translate(-1 * this.x, -1 * this.y, -1 * this.z);
   };
 
-  this.init = function(){
-      if (this.y < -500 || random(0,1) < deathProb || this.a <= 0) {
-          this.alive = false;
-      };
-      if (seed) {
+    this.init = function(){
+        if (seed) {
           this.seed = seed;
-      };
-  };
+          distanceFromSeed = findDistance(this.x, this.y, this.z, seed.x, seed.y, seed.z);
+          if (random(0,1) < deathProb || this.a <= 0 || distanceFromSeed > maxDistanceFromSeed) {
+              this.alive = false;
+          };
+        };
+    };
 
-  this.init();
+    this.init();
 };
 
 //=========================
